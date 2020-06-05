@@ -29,6 +29,9 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.http.GET;
 import rx.Observable;
+import rx.exceptions.OnErrorNotImplementedException;
+
+import static org.junit.Assert.fail;
 
 public final class ObservableTest {
   @Rule public final MockWebServer server = new MockWebServer();
@@ -80,6 +83,20 @@ public final class ObservableTest {
 
   @Test
   public void bodyFailure() {
+    server.enqueue(new MockResponse().setSocketPolicy(DISCONNECT_AFTER_REQUEST));
+
+    RecordingSubscriber<String> subscriber = subscriberRule.create();
+    try {
+      service.body().toSingle().subscribe(x -> {});
+      fail("Should not reach here");
+    } catch (final OnErrorNotImplementedException e) {
+      // Expected
+    }
+    subscriber.assertError(IOException.class);
+  }
+
+  @Test
+  public void bodyAdaptedToSingleFailure() {
     server.enqueue(new MockResponse().setSocketPolicy(DISCONNECT_AFTER_REQUEST));
 
     RecordingSubscriber<String> subscriber = subscriberRule.create();
